@@ -1,17 +1,19 @@
+#!/bin/ash
 echo Starting Processing
 java -XX:+PrintFlagsFinal -version | grep -Ei "maxheapsize|maxram"
-# \
+#
 # Use a dataset name if specified, else use "db"
-# \
+#
 if [ -n "${DATASET}" ]; then
   DATASET=${DATASET}
   echo using DATASET specified via environment variable: ${DATASET}
 else
   DATASET=db
 fi
-# \
-# Create a list of file extensions \
-# \
+THREADS=${THREADS:-$(($(nproc) - 1))}
+#
+# Create a list of file extensions
+#
 extensions="rdf ttl owl nt nquads nq"
 PATTERNS=""
 for e in ${extensions}; do
@@ -23,9 +25,9 @@ else
   patterns="$@"
 fi
 
-# \
+#
 # create a list of the files\
-# \
+#
 files=""
 for pattern in $patterns; do
   files="${files} $(find /rdf -type f -name "${pattern}")"
@@ -33,9 +35,9 @@ done
 echo "The following RDF files have been found and will be validated:"
 echo ${files} | tr " " "\n"
 echo "##############################"
-# \
-# Validate the files \
-# \
+#
+# Validate the files
+#
 if [ -z ${SKIP_VALIDATION+x} ]; then
   for file in $files; do
     echo Validating $file
@@ -53,9 +55,9 @@ if [ -z ${SKIP_VALIDATION+x} ]; then
 else
   echo "Skipping validation"
 fi
-# \
-# Recreate files list (to exclude errored files) \
-# \
+#
+# Recreate files list (to exclude errored files)
+#
 files=""
 for pattern in $patterns; do
   files="${files} $(find /rdf -type f -name "${pattern}")"
@@ -64,9 +66,9 @@ echo "##############################"
 echo "The following RDF files will be processed:"
 echo ${files} | tr " " "\n"
 echo "##############################"
-# \
-# Create a TDB2 dataset \
-# \
+#
+# Create a TDB2 dataset
+#
 nq_files=""
 other_files=""
 for file in $files; do
@@ -98,10 +100,10 @@ else
   fi
 fi
 
-chmod 755 -R /databases/${DATASET}
-# \
-# Create a spatial index \
-# \
+# Testing: may be required for ECS to write to mounted EFS volume
+chmod 755 -R /databases
+# Create a spatial index
+#
 if [ "$NO_SPATIAL" = true ]; then
   echo "##############################"
   echo Skipping spatial index creation - NO_SPATIAL environment variable is set to true
@@ -112,7 +114,7 @@ else
     --dataset /databases/${DATASET} \
     --index /databases/${DATASET}/spatial.index
 fi
-# \
-# Create a Lucene text index \
-# \
+#
+# Create a Lucene text index
+#
 #java -cp /fuseki-server.jar jena.textindexer --desc=/config.ttl

@@ -5,7 +5,7 @@ ENV JENA_VERSION=5.0.0
 
 # Update system packages, install required tools
 RUN apk update && \
-    apk add --no-cache unzip curl
+    apk add --no-cache unzip curl jq bash coreutils
 
 # Add a user `fuseki` with no password, create a home directory for the user
 # -D option for no password, -h for home directory
@@ -26,6 +26,7 @@ COPY --from=ghcr.io/zazuko/spatial-indexer:latest /app/spatialindexer.jar /spati
 # Copy scripts, ensure they're owned by fuseki
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chown fuseki:fuseki /entrypoint.sh && chmod +x /entrypoint.sh
+RUN mkdir -p /databases && chown fuseki:fuseki /databases
 
 # Set the working directory to the home directory of fuseki
 WORKDIR /home/fuseki
@@ -35,7 +36,6 @@ ENV PATH="/apache-jena-${JENA_VERSION}/bin:${PATH}"
 
 # Switch to user `fuseki` for subsequent commands
 USER fuseki
-
 # Set the entrypoint
 ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
 
