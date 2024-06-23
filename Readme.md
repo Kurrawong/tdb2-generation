@@ -11,49 +11,12 @@ An additional set of instructions is also provided for running this Dockerfile o
 
 Example command to build this image:
 `docker build -t tdb-generation .`
-Example command to run this image locally, using data from S3:
+
+Example command to run this image locally.
 ```
-docker run \
-   -v <host_db_dir>:/newdb \
-   -e AWS_ACCESS_KEY_ID=<YOUR ACCESS KEY HERE> \
-   -e AWS_SECRET_ACCESS_KEY=<YOUR SECRET HERE> \
-   -e S3_BUCKET=<YOUR S3 BUCKET HERE> \
-   -e S3_DIRECTORY=<YOUR S3 DIRECTORY HERE> \
-   -e DATASET=mydataset \
-   tdb2-generation:<image_version>
+docker run -v $(pwd)/output:/databases -v $(pwd)/data:/rdf tdb2-generation
 ```
 
-Example command to run this image locally, using local data:
-```
-docker run \
-   -v mydbvolume:/newdb \
-   --mount type=bind,source=<host_data_dir>,target=/rdf \
-   -e DATASET=mydataset \
-   tdb-generation:<image_version>
-```
-
-To process a large (say, >30GB) dataset, use tdb2.xloader. For example:
-
-```
-docker run \
-   -v <host_db_dir>:/newdb \
-   -e AWS_ACCESS_KEY_ID=<YOUR ACCESS KEY HERE> \
-   -e AWS_SECRET_ACCESS_KEY=<YOUR SECRET HERE> \
-   -e S3_BUCKET=<YOUR S3 BUCKET HERE> \
-   -e S3_DIRECTORY=<YOUR S3 DIRECTORY HERE> \
-   -e DATASET=mydataset \
-   -e USE_XLOADER=true \
-   -e THREADS=<N_cores-1> \
-   tdb-generation:<image_version>
-```
-
-_NB when run using the ECS task definitions supplied for both the PID and DA projects_ the AWS credentials do not need to be supplied - the relevant policy has been specified in terraform to give ECS access to read/write from the relevant S3 buckets. The mount will utilise an EFS volume specified in Terraform. The command that is run in ECS will be along the lines of:
-
-```
-docker run \
-   -v <efs_volume>:/newdb \
-   -e S3_BUCKET=<YOUR S3 BUCKET HERE> \
-   -e S3_DIRECTORY=<YOUR S3 DIRECTORY HERE> \
-   -e DATASET=mydataset \
-   tdb-generation:<image_version>
-```
+Where:
+- `$(pwd)/output` is the directory where the TDB2 databases will be created
+- `$(pwd)/data` is the directory containing the RDF files to be loaded
