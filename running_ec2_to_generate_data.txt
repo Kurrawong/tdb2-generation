@@ -5,8 +5,8 @@
 0.5 ssh in and run `sudo apt update`
 1. run `sudo apt install awscli -y`
 2. run `aws configure` -> enter creds for AWS account
-3. run `aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin 049648851863.dkr.ecr.ap-southeast-2.amazonaws.com`
-4. run `docker pull 049648851863.dkr.ecr.ap-southeast-2.amazonaws.com/tdb-generation:0.1.5`
+3. run `aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin <ecr repo>`
+4. run `docker pull <ecr repo>/tdb-generation:<tag>`
 5. if using an nvme disk, mount it, see: https://stackoverflow.com/questions/45167717/mounting-a-nvme-disk-on-aws-ec2
     5.1 `lsblk`
     5.2 `file -s /dev/nvme0n1`
@@ -14,5 +14,5 @@
     5.4 `mkdir /data`
     5.5 `mount /dev/nvme1n1 /data`
 6. optional: run aws s3 sync manually to get RDF on to the EC2 instance - if you don't do this and you make a mistake in the container command, you will need to re-download all of the s3 content (RDF) that you are trying to process. If using an NVME, suggest downloading the data here and mounting it to the container.
-    e.g. `aws s3 sync s3://digital-atlas-rdf /data`
-7. run the processing, e.g.: `docker run -v /mnt/efs/fs1/:/newdb --mount type=bind,source=/data,target=/rdf -e AWS_ACCESS_KEY_ID=<key> -e AWS_SECRET_ACCESS_KEY=<secret> -e DATASET=fsdf -e SKIP_VALIDATION=true -e THREADS=47 -e USE_XLOADER=true 049648851863.dkr.ecr.ap-southeast-2.amazonaws.com/tdb-generation:0.1.5`
+    e.g. `aws s3 sync s3://<my-bucket> /data`
+7. run the processing, e.g.: `docker run -v /mnt/efs/fs1/:/databases --mount type=bind,source=/data,target=/rdf -e DATASET=fsdf -e SKIP_VALIDATION=true -e THREADS=47 -e USE_XLOADER=true <ecr repo>/tdb-generation:<tag>`
