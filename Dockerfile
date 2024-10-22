@@ -1,7 +1,7 @@
-FROM eclipse-temurin:21.0.2_13-jre-alpine as base
+FROM eclipse-temurin:21-jre-alpine AS base
 
 # Set environment variables
-ENV JENA_VERSION=5.0.0
+ENV JENA_VERSION=5.2.0
 
 # Update system packages, install required tools
 RUN apk update && \
