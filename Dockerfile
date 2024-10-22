@@ -21,7 +21,7 @@ RUN curl "https://dlcdn.apache.org/jena/binaries/apache-jena-$JENA_VERSION.tar.g
     rm -r apache-jena-fuseki-$JENA_VERSION
 
 # Copy the spatialindexer.jar file
-COPY --from=ghcr.io/zazuko/spatial-indexer:latest /app/spatialindexer.jar /spatialindexer.jar
+COPY --from=ghcr.io/kurrawong/spatial-indexer:v0.0.1 /app/spatialindexer.jar /spatialindexer.jar
 
 # Copy scripts, ensure they're owned by fuseki
 COPY ./entrypoint.sh /entrypoint.sh
