@@ -3,9 +3,11 @@ FROM eclipse-temurin:21-jre-alpine AS base
 # Set environment variables
 ENV JENA_VERSION=5.2.0
 
+
 # Update system packages, install required tools
 RUN apk update && \
-    apk add --no-cache unzip curl jq bash coreutils
+    apk add --no-cache unzip curl jq bash coreutils && \
+	apk upgrade openssl
 
 # Add a user `fuseki` with no password, create a home directory for the user
 # -D option for no password, -h for home directory
