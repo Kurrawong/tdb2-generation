@@ -1,120 +1,79 @@
 #!/bin/ash
-echo Starting Processing
+set -euo pipefail
+
+# Ensure proper Java environment
+export JAVA_HOME=/opt/java/openjdk
+export PATH=$JAVA_HOME/bin:$PATH
+
+echo "Starting Processing"
 java -XX:+PrintFlagsFinal -version | grep -Ei "maxheapsize|maxram"
-#
-# Use a dataset name if specified, else use "db"
-#
-if [ -n "${DATASET}" ]; then
-  DATASET=${DATASET}
-  echo using DATASET specified via environment variable: ${DATASET}
-else
-  DATASET=db
-fi
-THREADS=${THREADS:-$(($(nproc) - 1))}
-#
-# Create a list of file extensions
-#
-extensions="rdf ttl owl nt nquads nq"
-PATTERNS=""
-for e in ${extensions}; do
-  PATTERNS="${PATTERNS} *.${e} *.${e}.gz"
-done
-if [ $# -eq 0 ]; then
-  patterns="${PATTERNS}"
-else
-  patterns="$@"
+
+# Dataset name handling
+DATASET="${DATASET:-db}"
+echo "Using dataset: $DATASET"
+THREADS="${THREADS:-$(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))}"
+echo "Using $THREADS threads"
+
+# Debug: Show contents of /rdf directory
+echo "Contents of /rdf directory:"
+find /rdf -type f
+
+echo "Searching for RDF files..."
+# Simpler find command that works in Alpine
+find /rdf -type f -name "*.nq" -print0 > /tmp/nq_files
+find /rdf -type f -name "*.rdf" -o -name "*.ttl" -o -name "*.owl" -o -name "*.nt" -o -name "*.nquads" > /tmp/other_files
+
+# Check if we found any nq files
+if [ ! -s /tmp/nq_files ] && [ ! -s /tmp/other_files ]; then
+    echo "No RDF files found."
+    rm -f /tmp/nq_files /tmp/other_files
+    exit 0
 fi
 
-#
-# create a list of the files\
-#
-files=""
-for pattern in $patterns; do
-  files="${files} $(find /rdf -type f -name "${pattern}")"
-done
-echo "The following RDF files have been found and will be validated:"
-echo ${files} | tr " " "\n"
+echo "The following RDF files have been found and will be processed:"
+echo "N-Quads files:"
+xargs -0 printf "%s\n" < /tmp/nq_files || true
+echo "Other RDF files:"
+cat /tmp/other_files || true
+
 echo "##############################"
-#
-# Validate the files
-#
-if [ -z ${SKIP_VALIDATION+x} ]; then
-  for file in $files; do
-    echo Validating $file
 
-    if ! output=$(riot --validate --quiet $file 2>&1); then
-      # This means an error occurred since the exit code is non-zero.
-      echo "Error in file $file"
-      echo "$output"  # display the error
-      mv -- $file ${file}.error
+# Load files into TDB2
+if [ -n "${USE_XLOADER:-}" ]; then
+    if [ -s /tmp/nq_files ]; then
+        xargs -0 tdb2.xloader --threads "$THREADS" --loc "/fuseki/databases/$DATASET" < /tmp/nq_files
     else
-      # No error occurred. Handle warnings or regular messages as needed.
-      echo File $file is valid rdf
+        echo "Error: No .nq files found. xloader requires N-Quads files."
     fi
-  done
 else
-  echo "Skipping validation"
-fi
-#
-# Recreate files list (to exclude errored files)
-#
-files=""
-for pattern in $patterns; do
-  files="${files} $(find /rdf -type f -name "${pattern}")"
-done
-echo "##############################"
-echo "The following RDF files will be processed:"
-echo ${files} | tr " " "\n"
-echo "##############################"
-#
-# Create a TDB2 dataset
-#
-nq_files=""
-other_files=""
-for file in $files; do
-  if [[ ${file} == *.nq ]]; then
-    nq_files="$nq_files $file"
-  else
-    other_files="$other_files $file"
-  fi
-done
-if [ -n "${USE_XLOADER}" ]; then
-  if [ "$nq_files" != "" ]; then
-    tdb2.xloader --threads $THREADS --loc /databases/${DATASET} $nq_files
-    else
-      echo Error: No files with extension .nq found - xloader can only be used with nquads files
-  fi
-else
-  if [ -n "${TDB2_MODE}" ]; then
-    TDB2_MODE=${TDB2_MODE}
-    echo using TDB2_MODE specified via environment variable: ${TDB2_MODE}
-  else
-    TDB2_MODE=phased
-    echo using default TDB2_MODE: ${TDB2_MODE}
-  fi
-  if [ "$nq_files" != "" ]; then
-    tdb2.tdbloader --loader=$TDB2_MODE --loc /databases/${DATASET} --verbose $nq_files
-  fi
-  if [ "$other_files" != "" ]; then
-    tdb2.tdbloader --loader=$TDB2_MODE --loc /databases/${DATASET} --graph https://default $other_files
-  fi
+    TDB2_MODE="${TDB2_MODE:-phased}"
+    echo "Using TDB2_MODE: $TDB2_MODE"
+
+    if [ -s /tmp/nq_files ]; then
+        xargs -0 tdb2.tdbloader --loader="$TDB2_MODE" --loc "/fuseki/databases/$DATASET" --verbose < /tmp/nq_files
+    fi
+
+    if [ -s /tmp/other_files ]; then
+        xargs -0 tdb2.tdbloader --loader="$TDB2_MODE" --loc "/fuseki/databases/$DATASET" --graph "https://default" < /tmp/other_files
+    fi
 fi
 
-# Testing: may be required for ECS to write to mounted EFS volume
-chmod 755 -R /databases
-# Create a spatial index
-#
-if [ "$NO_SPATIAL" = true ]; then
-  echo "##############################"
-  echo Skipping spatial index creation - NO_SPATIAL environment variable is set to true
+# Cleanup temporary files
+rm -f /tmp/nq_files /tmp/other_files
+
+# Adjust permissions
+chmod -R 0755 /fuseki/databases
+
+# Spatial index creation
+if [ "${NO_SPATIAL:-false}" = "true" ]; then
+    echo "Skipping spatial index creation (NO_SPATIAL is true)"
 else
-  echo "##############################"
-  echo Generating spatial index
-  java -jar /spatialindexer.jar \
-    --dataset /databases/${DATASET} \
-    --index /databases/${DATASET}/spatial.index
+    echo "Generating spatial index..."
+    java -jar /spatialindexer.jar \
+        --dataset "/fuseki/databases/$DATASET" \
+        --index "/fuseki/databases/$DATASET/spatial.index"
 fi
-#
-# Create a Lucene text index
-#
-#java -cp /fuseki-server.jar jena.textindexer --desc=/config.ttl
+
+# Create Lucene text index
+echo "Creating Lucene text index..."
+java -cp /fuseki-server.jar jena.textindexer --desc=/config.ttl

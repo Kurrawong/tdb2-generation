@@ -1,8 +1,7 @@
 FROM eclipse-temurin:21-jre-alpine AS base
 
 # Set environment variables
-ENV JENA_VERSION=5.2.0
-
+ENV JENA_VERSION=5.3.0
 
 # Update system packages, install required tools
 RUN apk update && \
@@ -28,7 +27,7 @@ COPY --from=ghcr.io/kurrawong/spatial-indexer:v0.0.1 /app/spatialindexer.jar /sp
 # Copy scripts, ensure they're owned by fuseki
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chown fuseki:fuseki /entrypoint.sh && chmod +x /entrypoint.sh
-RUN mkdir -p /databases && chown fuseki:fuseki /databases
+RUN mkdir -p /fuseki/databases && chown fuseki:fuseki /fuseki/databases
 
 # Set the working directory to the home directory of fuseki
 WORKDIR /home/fuseki
