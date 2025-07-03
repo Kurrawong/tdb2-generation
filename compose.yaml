@@ -1,0 +1,15 @@
+services:
+  tdb2-generation:
+    build: .
+    environment:
+      DATASET: testds
+      TEXT: true
+      SPATIAL: true
+      JENA_VERSION: 5.3.0
+    volumes:
+      - type: bind
+        source: tests/data
+        target: /rdf
+      - type: bind
+        source: tests/config.ttl
+        target: /config.ttl
