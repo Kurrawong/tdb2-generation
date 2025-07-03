@@ -2,14 +2,6 @@
 
 set -euo pipefail
 
-# warn about missing volume
-mountpoint="/fuseki/databases"
-if ! grep -q " $mountpoint " /proc/mounts; then
-  printf "\n\n"
-  echo "Warning! no volume is mounted to /fuseki/databases, outputs will not be persisted."
-  printf "\n\n"
-fi
-
 # Fail if $TEXT is set but no config.ttl is given
 TEXT="${TEXT:-}"
 if [ "$TEXT" ]; then
@@ -18,21 +10,6 @@ if [ "$TEXT" ]; then
     exit 1
   fi
 fi
-
-# Warn if $DATASET is not the same as what is in the config.ttl
-DATASET="${DATASET:-db}"
-config_ds_path=$(grep 'tdb2:location' /config.ttl | sed -n "s/.*['\"]\([^'\"]*\)['\"].*/\1/p")
-# too hard to tell if more than one dataset defined
-if [ $(echo "$config_ds_path" | wc -l) -lt 2 ]; then 
-  if ! [ "$config_ds_path" = "/fuseki/databases/$DATASET" ]; then
-    printf "\n\n"
-    echo "Warning! The given dataset name does not appear to match the one defined in /config.ttl"
-    echo "This may cause text indexing to fail."
-    echo "    /fuseki/databases/$DATASET != $config_ds_path"
-    printf "\n\n"
-  fi
-fi
-
 
 # Ensure proper Java environment
 export JAVA_HOME=/opt/java/openjdk
@@ -47,7 +24,7 @@ printf "\n"
 
 if [ -d "/rdf" ]; then
   echo "Searching for *.nq | *.trig | *.nq.gz"
-  find /rdf -type f \( -name "*.nq" -o -name "*.trig" -o -name "*.trig.gz" -o -name "*.nq.gz" \) > /tmp/targets
+  find /rdf -type f \( -name "*.nq" -o -name "*.trig" -o -name "*.nq.gz" \) > /tmp/targets
   if [ -s /tmp/targets ]; then
     echo "Found targets"
     cat /tmp/targets | xargs printf
@@ -75,8 +52,40 @@ printf "\n\nBegin TDB2 load\n\n"
 JENA_VERSION="${JENA_VERSION:-5.3.0}"
 echo "Using Jena version: $JENA_VERSION"
 
-# Default dataset name to 'db'
-echo "Using dataset: $DATASET"
+sparql="/apache-jena-$JENA_VERSION/bin/sparql"
+
+DATASET="${DATASET:-}"
+if [ "$DATASET" ]; then
+  # use given dataset path
+  echo "Using Dataset $DATASET"
+elif [ -f "/config.ttl" ]; then
+  # if config.ttl is given override dataset name from there
+  results="$($sparql --query=/query.rq --data=/config.ttl --results=json)"
+  num_results="$(echo $results | jq -r '.results.bindings | length')"
+  if [ "$num_results" -gt 1 ]; then
+    printf "\n\nERROR! there is only support for creating one dataset but two definitions were found in /config.ttl\n"
+    echo "$results"
+    exit 1
+  fi
+  DATASET="$(echo $results | jq -r '.results.bindings[0].tdb2_location.value')"
+else
+  # default dataset name to ds
+  DATASET="/out/ds"
+fi
+
+echo "Using Dataset $DATASET"
+
+mountpoint="$(dirname $DATASET)"
+if ! [ -d "$mountpoint" ]; then
+  mkdir -p "$mountpoint"
+fi
+
+# warn about missing volume
+if ! grep -q " $mountpoint " /proc/mounts; then
+  printf "\n\n"
+  echo "Warning! no volume is mounted to $mountpoint, outputs will not be persisted."
+  printf "\n\n"
+fi
 
 USE_XLOADER="${USE_XLOADER:-}"
 if [ -n "$USE_XLOADER" ]; then
@@ -89,24 +98,20 @@ else
   loader="/apache-jena-$JENA_VERSION/bin/tdb2.tdbloader --loader=$TDB2_MODE"
 fi
 
-text_indexer="java --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED -Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false -cp /apache-jena-fuseki-$JENA_VERSION/fuseki-server.jar jena.textindexer"
-spatial_indexer="java -jar /spatialindexer.jar"
-
-xargs $loader --loc "/fuseki/databases/$DATASET" < /tmp/targets
+xargs $loader --loc "$DATASET" < /tmp/targets
 
 # Adjust permissions
-chmod -R 0755 /fuseki/databases
+chmod -R 0755 "$DATASET"
 
 if [ -n "${SPATIAL:-}" ]; then
   printf "\n\nBegin Spatial Indexing\n\n"
-  $spatial_indexer --dataset "/fuseki/databases/$DATASET" --index "/fuseki/databases/$DATASET/spatial.index"
+  export SIS_DATA=/home/fuseki
+  spatial_indexer="java -jar /spatialindexer.jar"
+  $spatial_indexer --dataset "$DATASET" --index "$DATASET/spatial.index"
 fi
 
 if [ -n "$TEXT" ]; then
   printf "\n\nBegin Text Indexing\n\n"
-  if ! [ -f "/config.ttl" ]; then
-    echo "No assembler description mounted at /config.ttl, cannot complete text indexing"
-    exit 1
-  fi
+  text_indexer="java --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED -Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false -cp /apache-jena-fuseki-$JENA_VERSION/fuseki-server.jar jena.textindexer"
   $text_indexer --desc=/config.ttl
 fi

@@ -22,14 +22,7 @@ COPY --from=ghcr.io/kurrawong/spatial-indexer:v0.0.1 /app/spatialindexer.jar /sp
 
 # Copy scripts, ensure they're owned by fuseki
 COPY ./entrypoint.sh /entrypoint.sh
-RUN chown fuseki:fuseki /entrypoint.sh && chmod +x /entrypoint.sh
-RUN mkdir -p /fuseki/databases && chown fuseki:fuseki /fuseki/databases
-
-# Set the working directory to the home directory of fuseki
-WORKDIR /home/fuseki
-
-# Switch to user `fuseki` for subsequent commands
-USER fuseki
+COPY ./query.rq /query.rq
 
 # Set the entrypoint
 ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
