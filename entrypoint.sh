@@ -56,8 +56,7 @@ sparql="/apache-jena-$JENA_VERSION/bin/sparql"
 
 DATASET="${DATASET:-}"
 if [ "$DATASET" ]; then
-  # use given dataset path
-  echo "Using Dataset $DATASET"
+  true
 elif [ -f "/config.ttl" ]; then
   # if config.ttl is given override dataset name from there
   results="$($sparql --query=/query.rq --data=/config.ttl --results=json)"
@@ -97,6 +96,8 @@ else
   echo "Using $TDB2_MODE tdb2.loader"
   loader="/apache-jena-$JENA_VERSION/bin/tdb2.tdbloader --loader=$TDB2_MODE"
 fi
+
+printf "\n"
 
 xargs $loader --loc "$DATASET" < /tmp/targets
 
