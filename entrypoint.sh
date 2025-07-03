@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Fail if $TEXT is set but no config.ttl is given
+# Fail early if $TEXT is set but no config.ttl is given
 TEXT="${TEXT:-}"
 if [ "$TEXT" ]; then
   if ! [ -f "/config.ttl" ]; then
@@ -70,7 +70,7 @@ elif [ -f "/config.ttl" ]; then
   DATASET="$(echo $results | jq -r '.results.bindings[0].tdb2_location.value')"
 else
   # default dataset name to ds
-  DATASET="/out/ds"
+  DATASET="/fuseki/databases/ds"
 fi
 
 echo "Using Dataset $DATASET"
@@ -115,3 +115,7 @@ if [ -n "$TEXT" ]; then
   text_indexer="java --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED -Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false -cp /apache-jena-fuseki-$JENA_VERSION/fuseki-server.jar jena.textindexer"
   $text_indexer --desc=/config.ttl
 fi
+
+chown -R fuseki:fuseki "$DATASET"
+
+printf "\n\nEnd Processing\n\n"
