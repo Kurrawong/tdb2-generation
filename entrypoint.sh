@@ -27,7 +27,7 @@ if [ -d "/rdf" ]; then
   find /rdf -type f \( -name "*.nq" -o -name "*.trig" -o -name "*.nq.gz" \) > /tmp/targets
   if [ -s /tmp/targets ]; then
     echo "Found targets"
-    cat /tmp/targets | xargs printf
+    cat /tmp/targets
     printf "\n"
   else
     echo "No targets found, exiting"
