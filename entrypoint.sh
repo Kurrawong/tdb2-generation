@@ -46,14 +46,32 @@ if ! diff -q /tmp/allfiles /tmp/targets > /dev/null; then
   comm -13 <(sort /tmp/targets) <(sort /tmp/allfiles)
 fi
 
-
 printf "\n\nBegin TDB2 load\n\n"
 
 JENA_VERSION="${JENA_VERSION:-5.3.0}"
 echo "Using Jena version: $JENA_VERSION"
 
-sparql="/apache-jena-$JENA_VERSION/bin/sparql"
+riot="/apache-jena-$JENA_VERSION/bin/riot"
+SKIP_VALIDATION="${SKIP_VALIDATION:-}"
+if ! [ "$SKIP_VALIDATION" ]; then
+  printf "\nBegin Validation\n\n"
+  echo "invalid files will be renamed as *.invalid"
+  errors=0
+  while read -r line; do
+    printf "\n$line: "
+    if ! $riot --validate "$line" 2>/dev/null; then
+      printf "invalid"
+      mv "$line" "$line.invalid"
+      sed -i "\#$line#d" /tmp/targets
+      errors=$(($errors + 1))
+    else
+      printf "ok"
+    fi
+  done < /tmp/targets
+  printf "\n\nvalidation done. $errors errors.\n\n"
+fi
 
+sparql="/apache-jena-$JENA_VERSION/bin/sparql"
 DATASET="${DATASET:-}"
 if [ "$DATASET" ]; then
   true
