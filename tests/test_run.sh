@@ -1,1 +1,0 @@
-docker run -v $(pwd)/data:/rdf tdb2-generation:0.0.15
