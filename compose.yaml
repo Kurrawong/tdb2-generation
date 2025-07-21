@@ -4,7 +4,7 @@ services:
     environment:
       TEXT: true
       SPATIAL: true
-      JENA_VERSION: 5.3.0
+      JENA_VERSION: 5.5.0
     volumes:
       - type: bind
         source: tests/data
