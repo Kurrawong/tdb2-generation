@@ -57,18 +57,24 @@ if ! [ "$SKIP_VALIDATION" ]; then
   printf "\nBegin Validation\n\n"
   echo "invalid files will be renamed as *.invalid"
   errors=0
+  warnings=0
+  cp /tmp/targets /tmp/targets2
   while read -r line; do
-    printf "\n$line: "
-    if ! $riot --validate "$line" 2>/dev/null; then
-      printf "invalid"
+    printf "\n%s: " "$line"
+    messages="$($riot --validate "$line" 2>&1 || true)"
+    if echo "$messages" | grep -q '[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\} ERROR'; then
+      printf "errors"
       mv "$line" "$line.invalid"
       sed -i "\#$line#d" /tmp/targets
-      errors=$(($errors + 1))
+      errors=$((errors + 1))
+    elif echo "$messages" | grep -q '[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\} WARN'; then
+      printf "warnings"
+      warnings=$((warnings + 1))
     else
       printf "ok"
     fi
-  done < /tmp/targets
-  printf "\n\nvalidation done. $errors errors.\n\n"
+  done < /tmp/targets2
+  printf "\n\nvalidation done. %s errors. %s warnings\n\n" "$errors" "$warnings"
 fi
 
 sparql="/apache-jena-$JENA_VERSION/bin/sparql"
@@ -78,13 +84,13 @@ if [ "$DATASET" ]; then
 elif [ -f "/config.ttl" ]; then
   # if config.ttl is given override dataset name from there
   results="$($sparql --query=/query.rq --data=/config.ttl --results=json)"
-  num_results="$(echo $results | jq -r '.results.bindings | length')"
+  num_results="$(echo "$results" | jq -r '.results.bindings | length')"
   if [ "$num_results" -gt 1 ]; then
     printf "\n\nERROR! there is only support for creating one dataset but two definitions were found in /config.ttl\n"
     echo "$results"
     exit 1
   fi
-  DATASET="$(echo $results | jq -r '.results.bindings[0].tdb2_location.value')"
+  DATASET="$(echo "$results" | jq -r '.results.bindings[0].tdb2_location.value')"
 else
   # default dataset name to ds
   DATASET="/fuseki/databases/ds"
@@ -92,7 +98,7 @@ fi
 
 echo "Using Dataset $DATASET"
 
-mountpoint="$(dirname $DATASET)"
+mountpoint="$(dirname "$DATASET")"
 if ! [ -d "$mountpoint" ]; then
   mkdir -p "$mountpoint"
 fi

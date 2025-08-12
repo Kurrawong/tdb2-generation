@@ -1,0 +1,5 @@
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<g> {
+  <a> <b> "a"^^xsd:integer .
+}

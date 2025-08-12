@@ -25,7 +25,4 @@ COPY ./entrypoint.sh /entrypoint.sh
 COPY ./query.rq /query.rq
 
 # Set the entrypoint
-ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
-
-# Default CMD
-CMD []
+ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]

@@ -3,9 +3,8 @@
 set -e
 
 JENA_ARCHIVE=https://archive.apache.org/dist/jena/binaries
-JENA_VERSIONS="${JENA_VERSIONS}"
 
-IFS="," read -ra versions <<< "$JENA_VERSIONS"
+IFS="," read -ra versions <<< "${JENA_VERSIONS}"
 for version in "${versions[@]}"; do
     echo "Downloading jena $version binaries"
     curl "$JENA_ARCHIVE/apache-jena-$version.tar.gz" -o "/jena.tar.gz"
