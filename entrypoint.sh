@@ -35,6 +35,7 @@ USE_XLOADER="${USE_XLOADER:-}"
 if [ -n "$USE_XLOADER" ]; then
   if [ -d "${DATASET}" ]; then
     echo "ERROR! USE_XLOADER is set but the database already exists, please remove it and try again"
+    exit 1
   fi
 fi
 
