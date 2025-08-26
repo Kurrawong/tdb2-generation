@@ -5,7 +5,7 @@ ENV JENA_VERSIONS=5.5.0
 
 # Update system packages, install required tools
 RUN apk update && \
-    apk add --no-cache unzip curl jq bash coreutils && \
+    apk add --no-cache unzip curl jq bash coreutils parallel && \
 	apk upgrade openssl
 
 # Add a user `fuseki` with no password, create a home directory for the user

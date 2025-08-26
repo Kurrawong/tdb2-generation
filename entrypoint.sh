@@ -10,7 +10,7 @@ SKIP_LOAD="${SKIP_LOAD:-}"
 SKIP_VALIDATION="${SKIP_VALIDATION:-}"
 # tdb2.xloader options
 USE_XLOADER="${USE_XLOADER:-}"
-THREADS="${THREADS:-$(($(nproc) > 1 ? $(nproc) - 1 : 1))}"
+THREADS="${THREADS:-$(($(nproc) > 1 ? $(nproc) - 1 : 1))}" # also used by riot
 TMP_DIR="${TMP_DIR:-}"
 # tdb2.loader options
 TDB2_MODE="${TDB2_MODE:-phased}"
@@ -34,7 +34,7 @@ sparql="/apache-jena-$JENA_VERSION/bin/sparql"
 riot="/apache-jena-$JENA_VERSION/bin/riot"
 
 # Fail if $TEXT is set but no config.ttl is given
-if [ "$TEXT" ]; then
+if [ -n "$TEXT" ]; then
   if ! [ -f "/config.ttl" ]; then
     echo "ERROR! TEXT is set but no config was mounted at /config.ttl"
     exit 1
@@ -140,25 +140,35 @@ fi
 # validation
 if [ -z "$SKIP_VALIDATION" ] && [ -z "$SKIP_LOAD" ]; then
   printf "\nBegin Validation\n\n"
-  echo "Using Jena version: $JENA_VERSION"
-  errors=0
-  warnings=0
-  mv /tmp/targets /tmp/targets2
-  while read -r line; do
+  validate_file() {
+    line="$1"
     printf "\n%s: " "$line"
     messages="$($riot --validate "$line" 2>&1 || true)"
+    echo "$messages"
     if echo "$messages" | grep -q '[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\} ERROR'; then
       printf "errors"
-      errors=$((errors + 1))
+      echo "$line" >>/tmp/targets.errors
     elif echo "$messages" | grep -q '[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\} WARN'; then
       printf "warnings"
-      warnings=$((warnings + 1))
-      echo "$line" >>/tmp/targets
+      echo "$line" >>/tmp/targets.warnings
+      echo "$line" >>/tmp/targets.valid
     else
       printf "ok"
-      echo "$line" >>/tmp/targets
+      echo "$line" >>/tmp/targets.valid
     fi
-  done </tmp/targets2
+  }
+
+  export -f validate_file
+  export riot
+  touch /tmp/targets.warnings
+  touch /tmp/targets.errors
+  touch /tmp/targets.valid
+
+  parallel --jobs "$THREADS" validate_file :::: /tmp/targets
+
+  errors=$(wc -l </tmp/targets.errors)
+  warnings=$(wc -l </tmp/targets.warnings)
+  mv /tmp/targets.valid /tmp/targets
   printf "\n\nvalidation done. %s errors. %s warnings\n" "$errors" "$warnings"
 fi
 
