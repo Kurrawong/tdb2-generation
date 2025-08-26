@@ -1,10 +1,13 @@
 services:
-  tdb2-generation:
+
+  test-basic:
+    profiles:
+      - test-basic
     build: .
     environment:
+      JENA_VERSION: 5.5.0
       TEXT: true
       SPATIAL: true
-      JENA_VERSION: 5.5.0
     volumes:
       - type: bind
         source: tests/data
@@ -12,3 +15,37 @@ services:
       - type: bind
         source: tests/config.ttl
         target: /config.ttl
+
+  test-filenames:
+    profiles:
+      - test-filenames
+    build: .
+    volumes:
+      - type: bind
+        source: tests/bad_data
+        target: /rdf
+
+  test-persist:
+    profiles:
+      - test-persist
+    build: .
+    volumes:
+      - type: bind
+        source: tests/data
+        target: /rdf
+      - type: bind
+        source: tests/tdb/
+        target: /fuseki/databases
+
+  test-indexonly:
+    profiles:
+      - test-indexonly
+    build: .
+    environment:
+        SKIP_LOAD: true
+        SPATIAL: true
+    volumes:
+      - type: bind
+        source: tests/tdb/ds
+        target: /fuseki/databases/ds
+

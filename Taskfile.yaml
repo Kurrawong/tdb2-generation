@@ -1,0 +1,23 @@
+# https://taskfile.dev/usage
+
+version: '3'
+
+tasks:
+  default:
+    desc: list all tasks
+    cmd: task -a
+
+  tests:basic:
+    desc: test functioning of container
+    cmd: docker compose --profile test-basic up --build
+
+  tests:filenames:
+    desc: test filename errors
+    cmd: docker compose --profile test-filenames up --build
+
+  tests:indexonly:
+    desc: test adding an index to an existing dataset
+    cmds:
+      - rm tests/tdb -rf
+      - docker compose --profile test-persist up --build
+      - docker compose --profile test-indexonly up --build

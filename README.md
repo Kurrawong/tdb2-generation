@@ -51,15 +51,11 @@ docker run \
   ghcr.io/kurrawong/tdb2-generation:latest
 ```
 
-> [!WARNING]  
-> Only quads are supported, this includes nquads, trig, and gzipped nquads.  
-> Other files will be ignored.
-
 ## Environment Variables
 
 | Variable          | Purpose                                                                                                                                              | Default                                                                                                                                                                        | Usage Example                    |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| `JENA_VERSION`    | which version of jena/fuseki to use for building the database.                                                                                       | 5.3.0 options: \[ 5.3.0, 4.10.0 ]                                                                                                                                              | `JENA_VERSION=4.10.0`            |
+| `JENA_VERSION`    | Which version of jena/fuseki to use for building the database.                                                                                       | 5.5.0 options: \[ 5.5.0, ... ]                                                                                                                                                 | `JENA_VERSION=5.5.0`             |
 | `SPATIAL`         | If set, do spatial indexing                                                                                                                          | unset (false)                                                                                                                                                                  | `SPATIAL=true`                   |
 | `TEXT`            | If set, do text indexing. Requires an assembler description mounted at `/config.ttl`                                                                 | unset (false)                                                                                                                                                                  | `TEXT=true`                      |
 | `THREADS`         | Sets the number of threads to use for processing <br> (only applies to tdb2.xloader)                                                                 | Number of available processors minus 1                                                                                                                                         | `THREADS=4`                      |
@@ -67,6 +63,9 @@ docker run \
 | `TDB2_MODE`       | Specifies the loader mode for tdb2.tdbloader. <br> See [tdbloader options](https://jena.apache.org/documentation/tdb2/tdb2_cmds.html#loader-options) | `phased` if not set                                                                                                                                                            | `TDB2_MODE=sequential`           |
 | `DATASET`         | Specifies the path where the tdb dataset should be created.                                                                                          | If no assembler description is mounted at /config.ttl it will defualt to `/fuseki/databases/ds`. Else it is derived from the `tdb2:location "..." ;` statement in /config.ttl. | `DATASET=/fuseki/databases/myds` |
 | `SKIP_VALIDATION` | If set skip the validation check. By default, invalid RDF files will be marked as \*.invalid and not processed.                                      | unset (false)                                                                                                                                                                  | `SKIP_VALIDATION=true`           |
+| `SKIP_LOAD`       | If set skip the tdb2 generation. Allows indexing an already built dataset or applying validation only.                                               | unset (false)                                                                                                                                                                  | `SKIP_LOAD=true`                 |
+| `GRAPH`           | Optional named graph for triples (only used for tdb2.tdbloader, not tdb2.xloader)                                                                    | unset                                                                                                                                                                          | `GRAPH=https://graphs/example`   |
+| `JVM_ARGS`        | General Java args                                                                                                                                    | unset                                                                                                                                                                          | `JVM_ARGS=-Xmx4G`                |
 
 ## Development
 
