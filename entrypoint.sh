@@ -144,7 +144,6 @@ if [ -z "$SKIP_VALIDATION" ] && [ -z "$SKIP_LOAD" ]; then
     line="$1"
     printf "\n%s: " "$line"
     messages="$($riot --validate "$line" 2>&1 || true)"
-    echo "$messages"
     if echo "$messages" | grep -q '[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\} ERROR'; then
       printf "errors"
       echo "$line" >>/tmp/targets.errors
