@@ -21,3 +21,6 @@ tasks:
       - rm tests/tdb -rf
       - docker compose --profile test-persist up --build
       - docker compose --profile test-indexonly up --build
+  tests:jvm:
+    desc: test setting JVM_ARGS
+    cmd: docker compose --profile test-jvm up --build

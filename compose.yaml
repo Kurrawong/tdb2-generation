@@ -49,3 +49,15 @@ services:
         source: tests/tdb/ds
         target: /fuseki/databases/ds
 
+  test-jvmargs:
+    profiles:
+      - test-jvm
+    build: .
+    environment:
+        USE_XLOADER: true
+        JVM_ARGS: -Xmx6G
+    volumes:
+      - type: bind
+        source: tests/data
+        target: /rdf
+

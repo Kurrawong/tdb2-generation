@@ -62,7 +62,7 @@ docker run \
 | `USE_XLOADER`     | If set, use tdb2.xloader instead of tdb2.tdbloader. <br> See [tdb.xloader](https://jena.apache.org/documentation/tdb/tdb-xloader.html)               | unset (false)                                                                                                                                                                  | `USE_XLOADER=true`               |
 | `TDB2_MODE`       | Specifies the loader mode for tdb2.tdbloader. <br> See [tdbloader options](https://jena.apache.org/documentation/tdb2/tdb2_cmds.html#loader-options) | `phased` if not set                                                                                                                                                            | `TDB2_MODE=sequential`           |
 | `DATASET`         | Specifies the path where the tdb dataset should be created.                                                                                          | If no assembler description is mounted at /config.ttl it will defualt to `/fuseki/databases/ds`. Else it is derived from the `tdb2:location "..." ;` statement in /config.ttl. | `DATASET=/fuseki/databases/myds` |
-| `SKIP_VALIDATION` | If set skip the validation check. By default, invalid RDF files will be marked as \*.invalid and not processed.                                      | unset (false)                                                                                                                                                                  | `SKIP_VALIDATION=true`           |
+| `SKIP_VALIDATION` | If set skip the validation check. By default, riot will be used to check for invalid RDF files, and not process them.                                | unset (false)                                                                                                                                                                  | `SKIP_VALIDATION=true`           |
 | `SKIP_LOAD`       | If set skip the tdb2 generation. Allows indexing an already built dataset or applying validation only.                                               | unset (false)                                                                                                                                                                  | `SKIP_LOAD=true`                 |
 | `GRAPH`           | Optional named graph for triples (only used for tdb2.tdbloader, not tdb2.xloader)                                                                    | unset                                                                                                                                                                          | `GRAPH=https://graphs/example`   |
 | `JVM_ARGS`        | General Java args                                                                                                                                    | unset                                                                                                                                                                          | `JVM_ARGS=-Xmx4G`                |
@@ -75,8 +75,9 @@ To build the image locally
 docker build . -t tdb2-generation:dev
 ```
 
-To run it against some test data / config
+Some test scenarios are pre-written in the compose file and can be executed easily with
+[task](https://taskfile.dev). eg.
 
 ```bash
-docker compose up
+task tests:basic
 ```

@@ -20,9 +20,9 @@ TEXT="${TEXT:-}"
 SPATIAL="${SPATIAL:-}"
 
 # Ensure proper Java environment
-JAVA_HOME=/opt/java/openjdk
-PATH=$JAVA_HOME/bin:$PATH
-JVM_ARGS="${JVM_ARGS:-}"
+export JAVA_HOME=/opt/java/openjdk
+export PATH=$JAVA_HOME/bin:$PATH
+export JVM_ARGS="${JVM_ARGS:-}"
 
 echo "java opts:"
 printf "\n"
