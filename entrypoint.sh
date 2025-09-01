@@ -83,7 +83,7 @@ if ! [ -d "$mountpoint" ]; then
 fi
 
 # Warn about data loss from missing volume
-if ! grep -q " $mountpoint " /proc/mounts; then
+if ! (grep -q " $mountpoint " /proc/mounts || grep -q " $DATASET " /proc/mounts); then
   printf "\n\n"
   echo "Warning! no volume is mounted to $mountpoint, outputs will not be persisted."
   printf "\n\n"
