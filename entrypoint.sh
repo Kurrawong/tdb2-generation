@@ -18,11 +18,16 @@ GRAPH="${GRAPH:-}"
 # indexing options
 TEXT="${TEXT:-}"
 SPATIAL="${SPATIAL:-}"
+SPATIAL_INDEX_FILE="${SPATIAL_INDEX_FILE:-}"
+SRS_URI="${SRS_URI:-}"
 
 # Ensure proper Java environment
 export JAVA_HOME=/opt/java/openjdk
 export PATH=$JAVA_HOME/bin:$PATH
 export JVM_ARGS="${JVM_ARGS:-}"
+if [ "$JVM_ARGS" ]; then
+  export JAVA_TOOL_OPTS="$JVM_ARGS"
+fi
 
 echo "java opts:"
 printf "\n"
@@ -47,17 +52,52 @@ if [ "$DATASET" ]; then
   true
 elif [ -f "/config.ttl" ]; then
   # else if a config.ttl is given use the dataset name from there
-  results="$($sparql --query=/query.rq --data=/config.ttl --results=json)"
+  results="$($sparql --query=/queries/tdb2Location.rq --data=/config.ttl --results=json)"
   num_results="$(echo "$results" | jq -r '.results.bindings | length')"
   if [ "$num_results" -gt 1 ]; then
     printf "\n\nERROR! there is only support for creating one dataset but two definitions were found in /config.ttl\n"
     echo "$results"
     exit 1
   fi
-  DATASET="$(echo "$results" | jq -r '.results.bindings[0].tdb2_location.value')"
+  DATASET="$(echo "$results" | jq -r '.results.bindings[0].tdb2Location.value')"
 else
   # else default dataset name to ds
   DATASET="/fuseki/databases/ds"
+fi
+
+if [ "$SPATIAL" ]; then
+  # Determine the name of the spatial index file
+  # if one is given as env var, use that
+  if [ "$SPATIAL_INDEX_FILE" ]; then
+    true
+  # if config file is given try to determine from that
+  elif [ -f "/config.ttl" ]; then
+    results="$($sparql --query=/queries/indexFile.rq --data=/config.ttl --results=json)"
+    num_results="$(echo "$results" | jq -r '.results.bindings | length')"
+    if [ "$num_results" -eq 1 ]; then
+      SPATIAL_INDEX_FILE="$(echo "$results" | jq -r '.results.bindings[0].indexFile.value')"
+    # fallback to spatial.index
+    else
+      SPATIAL_INDEX_FILE="$DATASET/spatial.index"
+    fi
+  # default to spatial.index
+  else
+    SPATIAL_INDEX_FILE="$DATASET/spatial.index"
+  fi
+
+  # Determine the srs uri for spatial indexing
+  # if one is given as env var, use that
+  if [ "$SRS_URI" ]; then
+    true
+  # if config file is given try to determine from that
+  elif [ -f "/config.ttl" ]; then
+    results="$($sparql --query=/queries/srsUri.rq --data=/config.ttl --results=json)"
+    num_results="$(echo "$results" | jq -r '.results.bindings | length')"
+    if [ "$num_results" -eq 1 ]; then
+      SRS_URI="$(echo "$results" | jq -r '.results.bindings[0].srsUri.value')"
+    fi
+  fi
+  # otherwise leave unset
 fi
 
 # Fail if the tdb database already exists and $USE_XLOADER is true.
@@ -207,8 +247,14 @@ chmod -R 0755 "$DATASET"
 if [ -n "$SPATIAL" ]; then
   printf "\n\nBegin Spatial Indexing\n\n"
   export SIS_DATA=/home/fuseki
+  echo "Using spatial index file $SPATIAL_INDEX_FILE"
   spatial_indexer="java -jar /spatialindexer.jar"
-  $spatial_indexer --dataset "$DATASET" --index "$DATASET/spatial.index"
+  if [ "$SRS_URI" ]; then
+    echo "Using SRS $SRS_URI"
+    printf "\n"
+    spatial_indexer="$spatial_indexer --srs $SRS_URI"
+  fi
+  $spatial_indexer --dataset "$DATASET" --index "$SPATIAL_INDEX_FILE"
 fi
 
 # Optional text indexing

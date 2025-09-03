@@ -1,0 +1,7 @@
+PREFIX geosparql: <http://jena.apache.org/geosparql#>
+
+SELECT ?indexFile
+WHERE {
+  ?s a geosparql:geosparqlDataset ;
+     geosparql:spatialIndexFile ?indexFile .
+}

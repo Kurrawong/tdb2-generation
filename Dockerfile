@@ -22,7 +22,7 @@ COPY --from=ghcr.io/kurrawong/spatial-indexer:v5.5.0-2 /app/spatialindexer.jar /
 
 # Copy scripts, ensure they're owned by fuseki
 COPY ./entrypoint.sh /entrypoint.sh
-COPY ./query.rq /query.rq
+COPY ./queries/ /queries
 
 # Set the entrypoint
 ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]

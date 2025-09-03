@@ -1,0 +1,7 @@
+PREFIX geosparql: <http://jena.apache.org/geosparql#>
+
+SELECT ?srsUri
+WHERE {
+  ?s a geosparql:geosparqlDataset ;
+     geosparql:srsUri ?srsUri .
+}

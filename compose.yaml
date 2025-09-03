@@ -60,4 +60,3 @@ services:
       - type: bind
         source: tests/data
         target: /rdf
-

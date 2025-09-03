@@ -1,6 +1,6 @@
 PREFIX tdb2:  <http://jena.apache.org/2016/tdb#>
 
-SELECT ?tdb2_location
+SELECT ?tdb2Location
 WHERE {
-  ?s tdb2:location ?tdb2_location .
+  ?s tdb2:location ?tdb2Location .
 }
