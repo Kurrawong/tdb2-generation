@@ -1,0 +1,18 @@
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+
+<g> {
+  <a> geo:hasGeometry [
+    a geo:Geometry ;
+    geo:asWKT "POINT (1 1)"^^geo:wktLiteral ;
+  ] .
+
+  <b> geo:hasGeometry [
+    a geo:Geometry ;
+    geo:asWKT "POINT (1 2)"^^geo:wktLiteral ;
+  ] .
+
+  <c> geo:hasGeometry [
+    a geo:Geometry ;
+    geo:asWKT "POINT (2 2)"^^geo:wktLiteral ;
+  ] .
+}
