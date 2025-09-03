@@ -18,7 +18,7 @@ RUN chmod +x jena_download.sh
 RUN ./jena_download.sh
 
 # Copy the spatialindexer.jar file
-COPY --from=ghcr.io/kurrawong/spatial-indexer:v0.0.1 /app/spatialindexer.jar /spatialindexer.jar
+COPY --from=ghcr.io/kurrawong/spatial-indexer:v5.5.0-1 /app/spatialindexer.jar /spatialindexer.jar
 
 # Copy scripts, ensure they're owned by fuseki
 COPY ./entrypoint.sh /entrypoint.sh
