@@ -60,3 +60,25 @@ services:
       - type: bind
         source: tests/data
         target: /rdf
+
+  test-stats:
+    profiles:
+      - test-stats
+    build: .
+    environment:
+      STATS: true
+    volumes:
+      - type: bind
+        source: tests/data
+        target: /rdf
+
+  test-compress:
+    profiles:
+      - test-compress
+    build: .
+    environment:
+      COMPRESS: true
+    volumes:
+      - type: bind
+        source: tests/data
+        target: /rdf

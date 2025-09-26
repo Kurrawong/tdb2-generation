@@ -8,9 +8,11 @@ JENA_VERSION="${JENA_VERSION:-5.5.0}"
 DATASET="${DATASET:-}"
 SKIP_LOAD="${SKIP_LOAD:-}"
 SKIP_VALIDATION="${SKIP_VALIDATION:-}"
+THREADS="${THREADS:-$(($(nproc) > 1 ? $(nproc) - 1 : 1))}"  # default to number of cores - 1
+STATS="${STATS:-}"
+COMPRESS="${COMPRESS:-}"
 # tdb2.xloader options
 USE_XLOADER="${USE_XLOADER:-}"
-THREADS="${THREADS:-$(($(nproc) > 1 ? $(nproc) - 1 : 1))}" # also used by riot
 TMP_DIR="${TMP_DIR:-}"
 # tdb2.loader options
 TDB2_MODE="${TDB2_MODE:-phased}"
@@ -29,14 +31,10 @@ if [ "$JVM_ARGS" ]; then
   export JAVA_TOOL_OPTS="$JVM_ARGS"
 fi
 
-echo "java opts:"
-printf "\n"
-java -XX:+PrintFlagsFinal -version | grep -Ei "maxheapsize|maxram"
-printf "\n"
-
 # Set the location of the required binaries
 sparql="/apache-jena-$JENA_VERSION/bin/sparql"
 riot="/apache-jena-$JENA_VERSION/bin/riot"
+tdb2stats="/apache-jena-$JENA_VERSION/bin/tdb2.tdbstats"
 
 # Fail if $TEXT is set but no config.ttl is given
 if [ -n "$TEXT" ]; then
@@ -123,9 +121,9 @@ if ! [ -d "$mountpoint" ]; then
 fi
 
 # Warn about data loss from missing volume
-if ! (grep -q " $mountpoint " /proc/mounts || grep -q " $DATASET " /proc/mounts); then
+if ! (grep -q " $(dirname "$mountpoint") " /proc/mounts || grep -q " $mountpoint " /proc/mounts || grep -q " $DATASET " /proc/mounts); then
   printf "\n\n"
-  echo "Warning! no volume is mounted to $mountpoint, outputs will not be persisted."
+  echo "Warning! it looks like you may have forgotten to mount a volume. Outputs will not be persisted"
   printf "\n\n"
 fi
 
@@ -243,7 +241,7 @@ fi
 # Adjust permissions for the indexers
 chmod -R 0755 "$DATASET"
 
-# Optional spatial indexing
+# spatial indexing
 if [ -n "$SPATIAL" ]; then
   printf "\n\nBegin Spatial Indexing\n\n"
   export SIS_DATA=/home/fuseki
@@ -257,12 +255,33 @@ if [ -n "$SPATIAL" ]; then
   $spatial_indexer --dataset "$DATASET" --index "$SPATIAL_INDEX_FILE"
 fi
 
-# Optional text indexing
+# text indexing
 if [ -n "$TEXT" ]; then
   printf "\n\nBegin Text Indexing\n\n"
   text_indexer="java --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED -Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false -cp /apache-jena-fuseki-$JENA_VERSION/fuseki-server.jar jena.textindexer"
   $text_indexer --desc=/config.ttl
 fi
+
+# tdb2stats
+if [ -n "$STATS" ]; then
+  printf "\n\nBegin Statistics Generation\n\n"
+  printf "Generating ..."
+  $tdb2stats --graph "urn:x-arq:UnionGraph" --loc "$DATASET" > /tmp/stats.opt.tmp
+  cp /tmp/stats.opt.tmp "$DATASET/stats.opt"
+  printf "\n---\n"
+  head -n 3 "$DATASET/stats.opt"
+  printf "\n  ...\n"
+  tail -n 3 "$DATASET/stats.opt"
+  printf "\n---\n"
+  printf "Done"
+fi
+
+# compression
+if [ -n "$COMPRESS" ]; then
+  printf "\n\nBegin Compression\n\n"
+  find "$DATASET" -type f | parallel --jobs "$THREADS" 'gzip "{}" --verbose'
+fi
+
 
 # More permissive ownership
 chown -R fuseki:fuseki "$(dirname "$DATASET")"

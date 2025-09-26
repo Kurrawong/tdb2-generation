@@ -24,3 +24,11 @@ tasks:
   tests:jvm:
     desc: test setting JVM_ARGS
     cmd: docker compose --profile test-jvm up --build
+
+  tests:stats:
+    desc: test creating tdbstats
+    cmd: docker compose --profile test-stats up --build
+
+  tests:compress:
+    desc: test using the compression flag
+    cmd: docker compose --profile test-compress up --build

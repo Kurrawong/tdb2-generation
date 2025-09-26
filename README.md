@@ -68,6 +68,13 @@ docker run \
 | `JVM_ARGS`           | General Java args                                                                                                                                    | unset                                                                                                                                                                          | `JVM_ARGS=-Xmx4G`                                       |
 | `SPATIAL_INDEX_FILE` | location for spatial index file                                                                                                                      | object of the geosparql:spatialIndexFile predicate on the declared geosparql:Dataset in /config.ttl or if not given here "$DATASET/spatial.index"                              | `SPATIAL_INDEX_FILE=/fuseki/databases/ds/spatial.index` |
 | `SRS_URI`            | URI of srs to use for the spatial index                                                                                                              | object of the geosparql:srsUri predicate on the declared geosparql:Dataset in /config.ttl or if not given, unset                                                               | `SRS_URI=http://www.opengis.net/def/crs/OGC/1.3/CRS84`  |
+| `STATS`              | Generate dataset statistics using tdb2.tdbstats                                                                                                      | unset (false)                                                                                                                                                                  | `STATS=true`                                            |
+| `COMPRESS`           | Use gzip to compress the generated dataset / index files.                                                                                            | unset (false)                                                                                                                                                                  | `COMPRESS=true`                                         |
+
+> [!WARNING]
+> Setting variables to false is not supported, instead they should be left unset.
+> i.e. `USE_XLOADER=false` will be treated as enabling the `USE_XLOADER` flag. In other
+> words, `USE_XLOADER=false` == `USE_XLOADER=true`
 
 ## Development
 
