@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Initialise variables from env or defaults
 # options for all loaders
-JENA_VERSION="${JENA_VERSION:-5.5.0}"
+JENA_VERSION="${JENA_VERSION:-6.0.0}"
 DATASET="${DATASET:-}"
 SKIP_LOAD="${SKIP_LOAD:-}"
 SKIP_VALIDATION="${SKIP_VALIDATION:-}"

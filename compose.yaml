@@ -5,7 +5,7 @@ services:
       - test-basic
     build: .
     environment:
-      JENA_VERSION: 5.5.0
+      JENA_VERSION: 6.0.0
       TEXT: true
       SPATIAL: true
     volumes:

@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21-jre-alpine AS base
 
 # Set environment variables
-ENV JENA_VERSIONS=5.5.0
+ENV JENA_VERSIONS=6.0.0
 
 # Update system packages, install required tools
 RUN apk update && \
@@ -18,7 +18,7 @@ RUN chmod +x jena_download.sh
 RUN ./jena_download.sh
 
 # Copy the spatialindexer.jar file
-COPY --from=ghcr.io/kurrawong/spatial-indexer:v5.5.0-2 /app/spatialindexer.jar /spatialindexer.jar
+COPY --from=ghcr.io/kurrawong/spatial-indexer:v6.0.0-2 /app/spatialindexer.jar /spatialindexer.jar
 
 # Copy scripts, ensure they're owned by fuseki
 COPY ./entrypoint.sh /entrypoint.sh
